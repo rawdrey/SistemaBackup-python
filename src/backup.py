@@ -9,6 +9,17 @@ def criar_pasta_backup(destino, nome_backup):
     return caminho_backup
 
 
+def contar_itens(pasta):
+    total_arquivos = 0
+    total_pastas = 0
+
+    for raiz, pastas, arquivos in os.walk(pasta):
+        total_pastas += len(pastas)
+        total_arquivos += len(arquivos)
+
+    return total_arquivos, total_pastas
+
+
 def copiar_arquivos(origem, destino_backup):
     shutil.copytree(origem, destino_backup, dirs_exist_ok=True)
 
@@ -30,7 +41,24 @@ def executar_backup():
     nome_backup = gerar_nome_backup()
     caminho_backup = criar_pasta_backup(destino, nome_backup)
 
-    copiar_arquivos(origem, caminho_backup)
+    try:
+        copiar_arquivos(origem, caminho_backup)
 
-    print("\nBackup finalizado com sucesso!")
-    print(f"Destino: {caminho_backup}")
+        total_arquivos, total_pastas = contar_itens(caminho_backup)
+
+        print()
+        print("Backup finalizado com sucesso!")
+        print(f"Origem: {origem}")
+        print(f"Destino: {caminho_backup}")
+        print(f"Arquivos copiados: {total_arquivos}")
+        print(f"Pastas copiadas: {total_pastas}")
+
+    except PermissionError:
+        print("Erro: permissão negada ao copiar algum arquivo ou pasta.")
+
+    except FileNotFoundError:
+        print("Erro: algum arquivo ou pasta não foi encontrado durante o backup.")
+
+    except Exception as erro:
+        print("Erro inesperado durante o backup.")
+        print(f"Detalhes: {erro}")
