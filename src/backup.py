@@ -1,6 +1,7 @@
 import os
 import shutil
 from src.utils import gerar_nome_backup, verificar_pasta
+from src.logger import registrar_log
 
 
 def criar_pasta_backup(destino, nome_backup):
@@ -46,6 +47,14 @@ def executar_backup():
 
         total_arquivos, total_pastas = contar_itens(caminho_backup)
 
+        registrar_log(
+            origem,
+            caminho_backup,
+            total_arquivos,
+            total_pastas,
+            "Sucesso"
+        )
+
         print()
         print("Backup finalizado com sucesso!")
         print(f"Origem: {origem}")
@@ -54,11 +63,14 @@ def executar_backup():
         print(f"Pastas copiadas: {total_pastas}")
 
     except PermissionError:
+        registrar_log(origem, caminho_backup, 0, 0, "Erro", "Permissão negada")
         print("Erro: permissão negada ao copiar algum arquivo ou pasta.")
 
     except FileNotFoundError:
+        registrar_log(origem, caminho_backup, 0, 0, "Erro", "Arquivo ou pasta não encontrado")
         print("Erro: algum arquivo ou pasta não foi encontrado durante o backup.")
 
     except Exception as erro:
+        registrar_log(origem, caminho_backup, 0, 0, "Erro inesperado", str(erro))
         print("Erro inesperado durante o backup.")
         print(f"Detalhes: {erro}")
