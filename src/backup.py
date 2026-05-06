@@ -2,6 +2,7 @@ import os
 import shutil
 from src.utils import gerar_nome_backup, verificar_pasta
 from src.logger import registrar_log
+from src.config import carregar_config, salvar_config
 
 
 def criar_pasta_backup(destino, nome_backup):
@@ -28,8 +29,18 @@ def copiar_arquivos(origem, destino_backup):
 def executar_backup():
     print("=== Sistema de Backup em Python ===")
 
-    origem = input("Digite o caminho da pasta de origem: ")
-    destino = input("Digite o caminho da pasta onde o backup será salvo: ")
+    config = carregar_config()
+
+    origem = config.get("origem")
+    destino = config.get("destino")
+
+    if not origem:
+        origem = input("Digite o caminho da pasta de origem: ")
+
+    if not destino:
+        destino = input("Digite o caminho da pasta de destino: ")
+
+    salvar_config(origem, destino)
 
     if not verificar_pasta(origem):
         print("Erro: a pasta de origem não existe.")
