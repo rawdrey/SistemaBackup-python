@@ -1,5 +1,7 @@
 __pycache__/
 *.pyc
-.env
 venv/
-.backups/
+.env
+
+backups/
+backup.log
