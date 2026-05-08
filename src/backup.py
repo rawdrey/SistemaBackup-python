@@ -1,14 +1,9 @@
 import os
 import shutil
+
 from src.utils import gerar_nome_backup, verificar_pasta
 from src.logger import registrar_log
-from src.config import carregar_config, salvar_config
-
-
-def criar_pasta_backup(destino, nome_backup):
-    caminho_backup = os.path.join(destino, nome_backup)
-    os.makedirs(caminho_backup, exist_ok=True)
-    return caminho_backup
+from src.config import carregar_config
 
 
 def contar_itens(pasta):
@@ -22,66 +17,79 @@ def contar_itens(pasta):
     return total_arquivos, total_pastas
 
 
-def copiar_arquivos(origem, destino_backup):
-    shutil.copytree(origem, destino_backup, dirs_exist_ok=True)
+def criar_backup_zip(origem, destino, nome_backup):
+    caminho_zip = os.path.join(destino, nome_backup)
+
+    shutil.make_archive(
+        caminho_zip,
+        "zip",
+        origem
+    )
+
+    return caminho_zip + ".zip"
 
 
 def executar_backup():
-    print("=== Sistema de Backup em Python ===")
+    print("\n=== Executando Backup ===")
 
     config = carregar_config()
 
     origem = config.get("origem")
     destino = config.get("destino")
 
-    if not origem:
-        origem = input("Digite o caminho da pasta de origem: ")
-
-    if not destino:
-        destino = input("Digite o caminho da pasta de destino: ")
-
-    salvar_config(origem, destino)
-
     if not verificar_pasta(origem):
-        print("Erro: a pasta de origem não existe.")
+        print("Erro: pasta de origem não encontrada.")
         return
 
     if not verificar_pasta(destino):
-        print("Erro: a pasta de destino não existe.")
+        print("Erro: pasta de destino não encontrada.")
         return
 
     nome_backup = gerar_nome_backup()
-    caminho_backup = criar_pasta_backup(destino, nome_backup)
 
     try:
-        copiar_arquivos(origem, caminho_backup)
+        caminho_zip = criar_backup_zip(
+            origem,
+            destino,
+            nome_backup
+        )
 
-        total_arquivos, total_pastas = contar_itens(caminho_backup)
+        total_arquivos, total_pastas = contar_itens(origem)
 
         registrar_log(
             origem,
-            caminho_backup,
+            caminho_zip,
             total_arquivos,
             total_pastas,
             "Sucesso"
         )
 
-        print()
-        print("Backup finalizado com sucesso!")
-        print(f"Origem: {origem}")
-        print(f"Destino: {caminho_backup}")
+        print("\nBackup compactado criado com sucesso!")
+        print(f"Arquivo: {caminho_zip}")
         print(f"Arquivos copiados: {total_arquivos}")
         print(f"Pastas copiadas: {total_pastas}")
 
     except PermissionError:
-        registrar_log(origem, caminho_backup, 0, 0, "Erro", "Permissão negada")
-        print("Erro: permissão negada ao copiar algum arquivo ou pasta.")
+        registrar_log(
+            origem,
+            destino,
+            0,
+            0,
+            "Erro",
+            "Permissão negada"
+        )
 
-    except FileNotFoundError:
-        registrar_log(origem, caminho_backup, 0, 0, "Erro", "Arquivo ou pasta não encontrado")
-        print("Erro: algum arquivo ou pasta não foi encontrado durante o backup.")
+        print("Erro: permissão negada.")
 
     except Exception as erro:
-        registrar_log(origem, caminho_backup, 0, 0, "Erro inesperado", str(erro))
-        print("Erro inesperado durante o backup.")
+        registrar_log(
+            origem,
+            destino,
+            0,
+            0,
+            "Erro inesperado",
+            str(erro)
+        )
+
+        print("Erro inesperado.")
         print(f"Detalhes: {erro}")
