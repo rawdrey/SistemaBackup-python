@@ -1,4 +1,5 @@
-from src.backup import executar_backup
+from src.menu import exibir_menu
+
 
 if __name__ == "__main__":
-    executar_backup()
+    exibir_menu()
