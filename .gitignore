@@ -5,3 +5,4 @@ venv/
 
 backups/
 backup.log
+backup_state.json

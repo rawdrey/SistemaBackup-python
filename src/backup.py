@@ -1,36 +1,25 @@
 import os
-import shutil
+import zipfile
 
 from src.utils import gerar_nome_backup, verificar_pasta
 from src.logger import registrar_log
 from src.config import carregar_config
+from src.incremental import obter_arquivos_modificados
 
 
-def contar_itens(pasta):
-    total_arquivos = 0
-    total_pastas = 0
+def criar_backup_incremental_zip(origem, destino, nome_backup, arquivos):
+    caminho_zip = os.path.join(destino, nome_backup + ".zip")
 
-    for raiz, pastas, arquivos in os.walk(pasta):
-        total_pastas += len(pastas)
-        total_arquivos += len(arquivos)
+    with zipfile.ZipFile(caminho_zip, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for caminho_arquivo in arquivos:
+            caminho_relativo = os.path.relpath(caminho_arquivo, origem)
+            zipf.write(caminho_arquivo, caminho_relativo)
 
-    return total_arquivos, total_pastas
-
-
-def criar_backup_zip(origem, destino, nome_backup):
-    caminho_zip = os.path.join(destino, nome_backup)
-
-    shutil.make_archive(
-        caminho_zip,
-        "zip",
-        origem
-    )
-
-    return caminho_zip + ".zip"
+    return caminho_zip
 
 
 def executar_backup():
-    print("\n=== Executando Backup ===")
+    print("\n=== Executando Backup Incremental ===")
 
     config = carregar_config()
 
@@ -48,26 +37,37 @@ def executar_backup():
     nome_backup = gerar_nome_backup()
 
     try:
-        caminho_zip = criar_backup_zip(
+        arquivos_modificados = obter_arquivos_modificados(origem)
+
+        if not arquivos_modificados:
+            print("\nNenhum arquivo novo ou modificado encontrado.")
+            registrar_log(
+                origem,
+                destino,
+                0,
+                0,
+                "Nenhuma alteração"
+            )
+            return
+
+        caminho_zip = criar_backup_incremental_zip(
             origem,
             destino,
-            nome_backup
+            nome_backup,
+            arquivos_modificados
         )
-
-        total_arquivos, total_pastas = contar_itens(origem)
 
         registrar_log(
             origem,
             caminho_zip,
-            total_arquivos,
-            total_pastas,
+            len(arquivos_modificados),
+            0,
             "Sucesso"
         )
 
-        print("\nBackup compactado criado com sucesso!")
+        print("\nBackup incremental criado com sucesso!")
         print(f"Arquivo: {caminho_zip}")
-        print(f"Arquivos copiados: {total_arquivos}")
-        print(f"Pastas copiadas: {total_pastas}")
+        print(f"Arquivos adicionados ao backup: {len(arquivos_modificados)}")
 
     except PermissionError:
         registrar_log(
@@ -78,7 +78,6 @@ def executar_backup():
             "Erro",
             "Permissão negada"
         )
-
         print("Erro: permissão negada.")
 
     except Exception as erro:
@@ -90,6 +89,5 @@ def executar_backup():
             "Erro inesperado",
             str(erro)
         )
-
         print("Erro inesperado.")
         print(f"Detalhes: {erro}")
